@@ -1,6 +1,8 @@
 use std::thread;
 use std::time::{Instant, Duration};
 use std::io::{stdout, Write};
+use std::rc::Rc;
+use std::cell::Cell as StdCell;
 use std::sync::atomic::{Ordering::*, AtomicBool, AtomicI16, AtomicU32};
 use std::sync::{Arc, RwLockWriteGuard, RwLock, Mutex, MutexGuard};
 use std::ops::DerefMut;
@@ -34,6 +36,7 @@ macro_rules! arc_borrow_closure {
     }
 }
 
+#[allow(unused_macros)]
 macro_rules! set_panic_hook {
     (($message:expr) $code:block) => {
         std::panic::set_hook(std::boxed::Box::new(|panic_info: &std::panic::PanicInfo| {
@@ -54,7 +57,7 @@ enum GameEvent {
     MoveRight,
     MoveDown,
     RotateClock,
-    RotateUnclock,
+    //RotateUnclock,
     Pause,
     DebugBrickPosition,
 }
@@ -69,13 +72,19 @@ pub struct Game {
 
 impl Game {
     pub fn new()-> Self {
-        Self {
+        #[allow(unused_mut)]
+        let mut obj = Self {
             config_grid_width: 10,
             config_grid_height: 20,
             config_window_xcoord: 1,
             config_window_ycoord: 1,
-            config_debug_enabled: true,
+            config_debug_enabled: false,
+        };
+        #[cfg(debug_assertions)]
+        {
+            obj.config_debug_enabled = true;
         }
+        obj
     }
 
     pub fn init() {
@@ -121,7 +130,7 @@ impl Game {
         stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap();
     }
 
-    /// 用到三个线程
+    /// 用到两个线程
     ///  TetrisRender-KeyboardThread(main)
     ///    捕获键盘事件并发送到UpdateThread处理
     ///  TetrisRender-UpdateThread
@@ -210,7 +219,6 @@ impl Game {
         let update_func = arc_borrow_closure!(
         (condition, brick, grid, brick_x, brick_y, dbg_brick_pos_enabled, dbg_enabled, score, next_brick)
         move || {
-            set_panic_hook!({});
             // 将砖块存储到网格中，并消除满的一行
             let store_and_new_brick = arc_borrow_closure!(
             (grid, brick_x, brick_y, brick, score, next_brick)
@@ -393,31 +401,58 @@ impl Game {
                             let b_x = brick_x.load(Acquire);
                             let b_y = brick_y.load(Acquire);
                             let grid = grid.read().unwrap();
-                            let origd;
-                            let rd;
-                            let r_grid;
-                            let mut blocked_list = Vec::<Position>::new();
-                            {
-                            let brick = brick.read().unwrap();
-                            origd = brick.direction();
-                            rd = origd.rotate(true);
-                            r_grid = brick.get_grid(rd);
-                            for x in 0..r_grid.width() {
-                                for y in 0..r_grid.height() {
-                                    let cell = r_grid.get(x, y).unwrap();
-                                    let tmpx = x as i16 + b_x;
-                                    let tmpy = y as i16 + b_y;
-                                    if cell.has_block() && tmpy >= 0 && (!check_is_inrange(tmpx, tmpy) || grid.get(tmpx as u16, tmpy as u16).unwrap().has_block()) {
-                                        blocked_list.push(Position(x as i16, y as i16));
+                            let check = |r_grid: &Grid2D<Cell>, b_x, b_y|-> Vec<Position> {
+                                let mut blocked_list = Vec::<Position>::new();
+                                for x in 0..r_grid.width() {
+                                    for y in 0..r_grid.height() {
+                                        let cell = r_grid.get(x, y).unwrap();
+                                        let tmpx = x as i16 + b_x;
+                                        let tmpy = y as i16 + b_y;
+                                        if cell.has_block() && tmpy >= 0 && (!check_is_inrange(tmpx, tmpy) || grid.get(tmpx as u16, tmpy as u16).unwrap().has_block()) {
+                                            blocked_list.push(Position(x as i16, y as i16));
+                                        }
+                                    }
+                                }
+                                blocked_list
+                            };
+                            let brick_ = brick.read().unwrap();
+                            let origd = brick_.direction();
+                            let rd = origd.rotate(true);
+
+                            let blocked_list = check(brick_.get_grid(rd), b_x, b_y);
+                            if blocked_list.is_empty() {
+                                drop(brick_);
+                                brick.write().unwrap().switch(rd);
+                            } else {
+                                let xoffset: Rc<StdCell<i16>> = Rc::new(StdCell::new(0));
+                                let yoffset: Rc<StdCell<i16>> = Rc::new(StdCell::new(0));
+                                // 踢墙系统
+                                let kick_border = |p: Position| {
+                                    let xoffset = xoffset.clone();
+                                    let yoffset = yoffset.clone();
+                                    // 左右边界
+                                    if p.0 + b_x < 0 {
+                                        xoffset.set(-(p.0 + b_x));
+                                    } else if p.0 + b_x >= gwidth as i16 {
+                                        xoffset.set(-(gwidth as i16 - p.0 - b_x + 1));
+                                    }
+                                    if p.1 + b_y >= gheight as i16 {
+                                        yoffset.set(-(gheight as i16 - p.1 - b_y + 1));
+                                    }
+                                };
+                                for p in blocked_list {
+                                    kick_border(p);
+                                    if check(brick_.get_grid(rd), b_x + xoffset.get(), b_y + yoffset.get()).is_empty() {
+                                        brick_x.fetch_add(xoffset.get(), SeqCst);
+                                        brick_y.fetch_add(yoffset.get(), SeqCst);
+                                        drop(brick_);
+                                        brick.write().unwrap().switch(rd);
+                                        break;
                                     }
                                 }
                             }
-                            }
-                            if blocked_list.is_empty() {
-                                brick.write().unwrap().switch(rd);
-                            }
                         },
-                        _ => {},
+                        //_ => {},
                     }
                 }
 
@@ -612,6 +647,7 @@ impl Game {
             }
         });
 
+        #[cfg(debug_assertions)]
         let dbg_draw_brick_pos = |out_y: &mut u16| {
             if dbg_brick_pos_enabled.load(Acquire) {
                 queue!(
@@ -638,8 +674,11 @@ impl Game {
             draw_dashboard();
             //draw_dashboard();
 
-            let mut dbg_y = ycoord + height;
-            dbg_draw_brick_pos(&mut dbg_y);
+            #[cfg(debug_assertions)]
+            {
+                let mut dbg_y = ycoord + height;
+                dbg_draw_brick_pos(&mut dbg_y);
+            }
 
             stdout().flush().unwrap();
             if event_poll(Duration::from_millis(100)).unwrap() {
