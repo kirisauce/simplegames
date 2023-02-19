@@ -1,0 +1,14 @@
+[package]
+name = "tetris-rs"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+crossterm = "0.26.0"
+lazy_static = "1.4.0"
+rand = "0.8.5"
+unicode-width = "0.1.10"
+
+[profile.release]
+lto = true
+codegen-units = 1
