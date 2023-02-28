@@ -154,6 +154,7 @@ impl Game {
         let game_over_flag = Arc::new(AtomicBool::new(false));
         let (continue_notify, continue_trigger) = channel::<()>();
         let dbg_enabled = Arc::new(AtomicBool::new(self.config_debug_enabled));
+        let mut frame_delay = 0;
         let (key_sender, key_receiver) = channel::<GameEvent>();
 
         let dbg_brick_pos_enabled = Arc::new(AtomicBool::new(false));
@@ -328,7 +329,7 @@ impl Game {
             while condition.load(Acquire) {
                 let begin = Instant::now();
 
-                let event = key_receiver.recv_timeout(Duration::from_millis(50));
+                let event = key_receiver.recv_timeout(Duration::from_millis(80));
                 if let Ok(event) = event {
                     match event {
                         GameEvent::DebugBrickPosition => {
@@ -666,13 +667,19 @@ impl Game {
         };
 
         while condition.load(Acquire) {
-            Game::clear_screen();
-            draw_grid();
-            draw_brick();
-            draw_border();
-            draw_dashboard_border();
-            draw_dashboard();
-            //draw_dashboard();
+            let begin = Instant::now();
+            
+            if frame_delay > 0 {
+                frame_delay -= 1;
+            }
+            if frame_delay == 0 {
+                Game::clear_screen();
+                draw_grid();
+                draw_brick();
+                draw_border();
+                draw_dashboard_border();
+                draw_dashboard();
+            }
 
             #[cfg(debug_assertions)]
             {
@@ -686,11 +693,17 @@ impl Game {
                 if let Err(_) = event {
                     continue;
                 }
+                let delay = begin.elapsed();
+                if delay <= Duration::from_millis(10) {
+                    frame_delay += 2;
+                    if frame_delay >= 10 {
+                        frame_delay = 0;
+                    }
+                    continue;
+                } else {
+                    frame_delay = 0;
+                }
                 match event.unwrap() {
-                    /*Event::Resize(_, _) => {
-                        draw_border();
-                        draw_dashboard_border();
-                    },*/
                     Event::Key(key) => {
                         match key.code {
                             KeyCode::Char(c) => {
@@ -737,6 +750,11 @@ impl Game {
                     },
                     _ => {},
                 };
+                /*execute!(
+                    stdout(),
+                    cursor::MoveTo(0, 0),
+                    style::Print(delay.as_millis().to_string()),
+                ).unwrap();*/
                 thread::sleep(Duration::from_millis(10));
             }
         }
