@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <meta charset='utf-8' />
+        <meta name='viewport' content='initial-scale=1.0, maximum-scale=3, minimum-scale=1' />
+        <script src='https://unpkg.com/vconsole@latest/dist/vconsole.min.js'></script>
+        <script>
+            var vConsole = new VConsole();
+        </script>
+        <script src='vue.global.js'></script>
+    </head>
+    <body>
+        <div id='app'>
+            <div v-if='status == "visitor"' >
+                <div>游戏还未开始</div>
+                <div>当前游戏数量：{{sessions_count}}</div>
+                <div class='game_picker' >
+                </div>
+            </div>
+            <div v-else-if='status == "pairing"'>
+                pairing
+            </div>
+            <div v-else-if='status == "gaming"'>
+                gaming
+            </div>
+        </div>
+        <script>
+"use strict";
+
+const app = Vue.createApp({
+    data() {
+        return {
+            grid: null,
+            sessions_count: 0,
+            status: 'visitor'
+        };
+    },
+
+    mounted() {
+        let update = ()=>{
+            let xhr = new XMLHttpRequest();
+            xhr.open('GET', 'api/get_sessions_count');
+            xhr.onreadystatechange = (e) => {
+                if( xhr.readyState == 4 ) {
+                    if( xhr.status == 200 ) {
+                        let data = JSON.parse(xhr.responseText);
+                        if( data.code != 200 ) {
+                            this.sessions_count = '服务器错误';
+                        }
+                        this.sessions_count = data.data.count;
+                        setTimeout(update, 30000);
+                    }
+                }
+            };
+            xhr.onerror = ()=> {
+                this.sessions_count = '服务器错误';
+                setTimeout(update, 60000);
+            };
+            xhr.send(null);
+        };
+
+        update();
+    },
+
+    methods: {
+        create() {
+            this.status = 'pairing';
+            let ws = this.get_wsobject();
+            ws.send(JSON.stringify({
+                type: 'join'
+            }));
+        },
+
+        get_wsobject() {
+            if( this.ws == null ) {
+                this.ws = new Websocket('api/connect');
+                ws.onerror = ()=> {
+                    alert('GOMOKU: Websocket连接异常');
+                };
+            }
+        }
+    }
+});
+
+app.mount('#app');
+        </script>
+    </body>
+</html>
