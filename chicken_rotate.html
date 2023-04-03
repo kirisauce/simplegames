@@ -1,0 +1,57 @@
+<html>
+    <head>
+        <title></title>
+        <script src='https://unpkg.com/vconsole@latest/dist/vconsole.min.js'></script>
+        <style>
+@keyframes r2d {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes r3d {
+    from { transform: rotate3d(0, 0, 0, 0deg); }
+    to { transform: rotate3d(100, 100, 100, 360deg); }
+}
+
+img.img2d {
+    animation: r2d 1.8s linear 0s infinite;
+}
+
+img.img3d {
+    animation: r3d 1s linear 0s infinite;
+}
+        </style>
+    </head>
+    <body>
+        <input type='button' value='切换' onclick='switch_2d3d()' />
+        <img src='chicken.png' id='chicken' x='100' y='100' z='100' angle='360deg' />
+        <p id='timer'></p>
+        <script>
+var vConsole = new VConsole();
+var chicken_status = '';
+var timer = 0;
+function switch_2d3d() {
+    if( chicken_status == '2d' ) {
+        chicken_status = '3d';
+        chicken.setAttribute('class', 'img3d');
+    } else {
+        chicken_status = '2d';
+        chicken.setAttribute('class', 'img2d');
+    }
+}
+window.addEventListener('load', ()=> {
+    var chicken = document.querySelector('#chicken');
+    chicken.addEventListener('animationend', (event)=> {
+        if( chicken_status == '3d' ) {
+            let e = document.documentElement;
+        }
+    });
+    switch_2d3d();
+
+    setInterval(()=> {
+        document.querySelector('#timer').innerText = `鸡块旋转${timer++}秒`;
+    }, 1000);
+});
+        </script>
+    </body>
+</html>
