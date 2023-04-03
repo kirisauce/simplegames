@@ -6,7 +6,9 @@
 | 2048 | C++ | 放弃治疗 due to bugs |
 | 贪吃蛇 | C++ | 可以正常游玩 |
 | 数独(Soduku) | Python | 可以正常游玩 |
-| 五子棋(Gomoku) | Rust(actix-web) | 开发中 |
+| 五子棋(Gomoku) | Rust(rocket) | 开发中 |
+| 贪吃蛇-rs | Rust | 可以正常游玩 |
+| Dino | Rust | 开坑中 |
 
 本仓库作为学习编程的记录。
 
