@@ -172,7 +172,7 @@ impl BattlegroundState {
             let target = m_vec.get_mut(current_coord);
 
             if let Some(current_cell) = target {
-                if current_cell.has_mine {
+                if current_cell.has_mine && !current_cell.marked {
                     return Message::Gameover;
                 }
                 if !current_cell.opened && !current_cell.marked {
