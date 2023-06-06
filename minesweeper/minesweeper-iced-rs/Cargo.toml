@@ -14,3 +14,7 @@ vec2d = "0.4.0"
 version = "0.9.0"
 default-features = false
 features = ["canvas", "default_system_font", "glow"]
+
+[profile.release]
+lto = true
+opt-level = "z"
