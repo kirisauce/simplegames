@@ -1,6 +1,5 @@
 use iced::widget::canvas::{
     Cursor,
-    Fill,
     Frame,
     Geometry,
     Path,
@@ -40,7 +39,6 @@ use std::collections::VecDeque;
 
 #[derive(Copy, Clone, Debug)]
 enum Message {
-    Close,
     Gameover,
     Nothing,
 }
@@ -56,16 +54,6 @@ struct Cell {
 struct Battleground;
 
 impl BattlegroundState {
-    /*pub fn new(width: usize, height: usize)-> Self {
-        Self {
-            m_vec: Arc::new(Mutex::new(Vec2D::from_example(vec2d::Size::new(width, height), &Cell {
-                opened: true,
-                has_mine: false,
-                mines_counter: 0,
-            }))),
-        }
-    }*/
-
     fn canvas2coord(&self, bounds: Rectangle<f32>, mut point: Point)-> Option<Coord> {
         let size = bounds.size();
         if !bounds.contains(point) {
@@ -143,17 +131,21 @@ impl BattlegroundState {
     }
 
     /// 将所有格子置为未打开状态
+    /*
     pub fn close_all(&self) {
         self.m_vec.lock().unwrap().iter_mut().for_each(|i| i.1.opened = false);
     }
+    */
 
     /// 清除所有雷
+    /*
     pub fn clear_all_mines(&self) {
         self.m_vec.lock().unwrap().iter_mut().for_each(|i| {
             i.1.has_mine = false;
             i.1.mines_counter = 0;
         });
     }
+    */
 
     pub fn left_click(&mut self, coord: Coord)-> Message {
         let offsets: Vec<(isize, isize)> = vec![
@@ -178,7 +170,7 @@ impl BattlegroundState {
                 if !current_cell.opened && !current_cell.marked {
                     let current_cell = if !self.generated {
                         drop(current_cell);
-                        Self::place_mines(&mut m_vec, *MINES.wait(), (coord.x, coord.y));
+                        Self::place_mines(&mut m_vec, *MINES.wait(), (coord.x, coord.y)).expect("Cannot place mines");
                         self.generated = true;
                         m_vec.get_mut(current_coord).unwrap()
                     } else {
@@ -398,6 +390,7 @@ struct MineSweeper {
     pub size: (u32, u32),
 }
 
+#[allow(unused_parens)]
 impl Application for MineSweeper {
 
     type Executor = iced::executor::Default;
@@ -435,8 +428,8 @@ impl Application for MineSweeper {
         let pad = Padding {
             top: size.1 * 0.08,
             bottom: size.1 * 0.08,
-            left: size.0 * 0.1,
-            right: size.0 * 0.1,
+            left: size.0 * 0.04,
+            right: size.0 * 0.04,
         };
         Row::new()
             .padding(pad)
@@ -503,7 +496,7 @@ fn init_args() {
 static MINES: OnceCell<usize> = OnceCell::new();
 static SIZE: OnceCell<usize> = OnceCell::new();
 
-fn main() {
+fn main()-> iced::Result {
     init_args();
 
     MineSweeper::run(Settings {
@@ -515,5 +508,5 @@ fn main() {
         },
         flags: get_window_size(),
         ..Default::default()
-    });
+    })
 }
