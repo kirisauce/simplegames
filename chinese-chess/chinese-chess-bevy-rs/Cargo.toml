@@ -1,0 +1,19 @@
+[package]
+name = "chinese-chess-bevy-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+once_cell = "*"
+
+[dependencies.bevy]
+version = "0.10.1"
+features = ["bevy_winit", "bevy_animation", "animation", "android_shared_stdcxx", "bevy_asset", "bevy_audio", "bevy_render", "bevy_ui", "bevy_text", "x11", "bevy_sprite", "bevy_core_pipeline", "bevy_gltf", "bevy_pbr", "png", "vorbis", "zstd", "filesystem_watcher"]
+default-features = false
+
+[profile.release]
+strip = true
+opt-level = 3
+lto = true
