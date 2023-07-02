@@ -3,9 +3,10 @@ use bevy::window::*;
 use bevy::winit::{ WinitSettings, UpdateMode };
 use bevy::sprite::{ MaterialMesh2dBundle, Mesh2dHandle };
 use bevy::render::mesh::PrimitiveTopology;
+use bevy::input::keyboard::KeyboardInput;
+use bevy::input::ButtonState;
 
 use std::time::{ Duration, Instant };
-use std::sync::Mutex;
 
 const CHESS_NORMAL_COLOR: Color = Color::rgb(1., 0.92, 0.63);
 const CHESS_HOVERED_COLOR: Color = Color::rgb(1., 0.96, 0.82);
@@ -791,6 +792,7 @@ fn get_reachable_points(target: Entity, world: &World, chess_query: &QueryState<
 
 
 fn game_setup_system(
+    asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut window_query: Query<&mut Window, With<PrimaryWindow>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -882,6 +884,43 @@ fn game_setup_system(
             ..Default::default()
         }
     ));
+/*
+    commands.spawn((
+        Ingame,
+        UndoButton,
+        ButtonBundle {
+            style: Style {
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Stretch,
+                size: Size::new(Val::Percent(100.), Val::Auto),
+                aspect_ratio: Some(1.5),
+                ..Default::default()
+            },
+            transform: Transform::from_xyz(0., window_size.0 * 1.3, 0.8),
+            ..Default::default()
+        },
+    ))
+    .with_children(|parent| {
+        parent.spawn((
+            Ingame,
+            TextBundle {
+                text: Text {
+                    sections: vec![TextSection {
+                        value: "悔棋".to_string(),
+                        style: TextStyle {
+                            color: Color::rgb(0.1, 0.1, 0.1),
+                            font_size: window_size.compute_button_size()*1.8,
+                            font: asset_server.load("LXGWWenKai-subset.ttf"),
+                        },
+                    }] ,
+                    alignment: TextAlignment::Center,
+                    linebreak_behaviour: bevy::text::BreakLineOn::AnyCharacter,
+                },
+                ..Default::default()
+            },
+        ));
+    });
+*/
 
     use once_cell::sync::OnceCell;
     static CHESSES: OnceCell<Vec<(Role, (i32, i32))>> = OnceCell::new();
@@ -963,6 +1002,7 @@ fn game_system(
     mut history: ResMut<History>,
     mut color_materials: ResMut<Assets<ColorMaterial>>,
     mut current_team: ResMut<CurrentTeam>,
+    mut keyboard_events: EventReader<KeyboardInput>,
     children_query: Query<&Children>,
     mut button_set: ParamSet<(
         Query<(&ChessButton, &Interaction), (Changed<Interaction>, With<Button>, With<Ingame>)>,
@@ -1057,7 +1097,31 @@ fn game_system(
         }
     }
 
-    for interaction in button_set.p1().iter() {
+    for event in keyboard_events.iter() {
+        if let Some(key) = event.key_code {
+            if key == KeyCode::Z && event.state == ButtonState::Pressed {
+                // 悔棋
+                if let Some(record) = history.pop() {
+                    // 移动棋子
+                    if let Some(mut target_i) = set.p1().iter_mut().find(|i| i.1.position == record.to_pos) {
+                        target_i.1.position = record.from_pos;
+                        target_i.1.redraw_stage = 1;
+                    }
+                    // 清除选中与预览点
+                    set.p0().iter().for_each(|i| {
+                        commands.entity(i.0).remove::<Selected>();
+                    });
+                    preview_entity_query.iter().for_each(|e| commands.entity(e).despawn());
+                    // 重新生成目标棋子
+                    if let Some(target_chess) = record.target_chess {
+                        commands.spawn((Ingame, target_chess));
+                    }
+
+                    // 切换当前队伍
+                    current_team.0 = current_team.0.opposite();
+                }
+            }
+        }
     }
 }
 
@@ -1111,7 +1175,7 @@ fn chessboard_system(
     let padding = window_size.compute_padding();
     let button_size = window_size.compute_button_size();
     for (entity, mut chess, transform, old_mesh, selected, anim) in set.p1().iter_mut() {
-        if let Some(mut transform) = transform {
+        if let Some(transform) = transform {
             if chess.redraw_stage == 1 {
                 chess.redraw_stage = 2;
             } else if window_size.is_changed() || chess.redraw_stage == 2 {
