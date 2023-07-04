@@ -39,6 +39,7 @@ use std::collections::VecDeque;
 
 #[derive(Copy, Clone, Debug)]
 enum Message {
+    Win,
     Gameover,
     Nothing,
 }
@@ -148,6 +149,9 @@ impl BattlegroundState {
     */
 
     pub fn left_click(&mut self, coord: Coord)-> Message {
+        if self.locked {
+            return Message::Nothing;
+        }
         let offsets: Vec<(isize, isize)> = vec![
             (-1, -1), (-1, 0), (-1, 1), (0, -1),
             (0, 1), (1, -1), (1, 0), (1, 1)
@@ -165,6 +169,7 @@ impl BattlegroundState {
 
             if let Some(current_cell) = target {
                 if current_cell.has_mine && !current_cell.marked {
+                    self.locked = true;
                     return Message::Gameover;
                 }
                 if !current_cell.opened && !current_cell.marked {
@@ -189,10 +194,18 @@ impl BattlegroundState {
             }
         }
 
-        Message::Nothing
+        if Self::check_win(&m_vec) {
+            self.locked = true;
+            Message::Win
+        } else {
+            Message::Nothing
+        }
     }
 
     pub fn right_click(&self, coord: Coord)-> Message {
+        if self.locked {
+            return Message::Nothing;
+        }
         let mut m_vec = self.m_vec.lock().unwrap();
 
         if let Some(current_cell) = m_vec.get_mut(coord) {
@@ -203,6 +216,15 @@ impl BattlegroundState {
 
         Message::Nothing
     }
+
+    pub fn check_win(m_vec: &std::sync::MutexGuard<'_, Vec2D<Cell>>)-> bool {
+        for item in m_vec.iter() {
+            if !item.1.opened && !item.1.has_mine {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 #[derive(Debug)]
@@ -212,6 +234,7 @@ struct BattlegroundState {
     pub right_pressed: Option<Coord>,
 
     pub generated: bool,
+    pub locked: bool,
 }
 impl Default for BattlegroundState {
     fn default()-> Self {
@@ -225,6 +248,7 @@ impl Default for BattlegroundState {
             left_pressed: None,
             right_pressed: None,
             generated: false,
+            locked: false,
         }
     }
 }
@@ -411,7 +435,13 @@ impl Application for MineSweeper {
     fn update(&mut self, msg: Self::Message)-> Command<Self::Message> {
         match msg {
             Message::Gameover => {
-                win::close()
+                println!("爆炸了！");
+                Command::none()
+            },
+
+            Message::Win => {
+                println!("你赢了！");
+                Command::none()
             },
 
             _ => {

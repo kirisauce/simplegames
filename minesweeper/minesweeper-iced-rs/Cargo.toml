@@ -17,4 +17,5 @@ features = ["canvas", "default_system_font", "glow"]
 
 [profile.release]
 lto = true
-opt-level = "z"
+opt-level = 3
+strip = true
