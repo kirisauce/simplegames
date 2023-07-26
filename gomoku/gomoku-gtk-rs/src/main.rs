@@ -829,7 +829,7 @@ fn build_ui(app: &Application) {
     @weak tool_bar_single_player,
     @weak tool_bar_multiple_player,
     @weak team_suggestion,
-    @weam undo_bar,
+    @weak undo_bar,
     @strong state,
     => move |is_single_player| {
         undo_bar.set_visible(false);
@@ -849,7 +849,7 @@ fn build_ui(app: &Application) {
         }
     }
     );
-
+/*
     button_accept.connect_clicked(clone!(
     @strong switch_tool_bar,
     => move |_| {
@@ -858,7 +858,7 @@ fn build_ui(app: &Application) {
         
     }
     ));
-
+*/
     let box_up = gtk::Box::builder()
         .hexpand(true)
         .vexpand(true)
@@ -868,7 +868,7 @@ fn build_ui(app: &Application) {
     box_up.append(&chessboard_area);
     box_up.append(&tool_bar_single_player);
     box_up.append(&tool_bar_multiple_player);
-    box_up.append(&undo_bar);
+    //box_up.append(&undo_bar);
 
     game_page.append(&box_up);
     game_page.append(&status_bar);
