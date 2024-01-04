@@ -5,6 +5,7 @@
 | 俄罗斯方块(Tetris) | Rust | 可以正常游玩 |
 | 2048 | C++ | 放弃治疗 due to bugs |
 | 贪吃蛇 | C++ | 可以正常游玩 |
+| 贪吃蛇(Python tkinter) | Python | 可以正常游玩 |
 | 数独(Soduku) | Python | 可以正常游玩 |
 | 五子棋(Gomoku) | Rust(web) | 不造了! |
 | 贪吃蛇-rs | Rust | 可以正常游玩 |
