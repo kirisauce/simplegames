@@ -7,10 +7,10 @@
 | 贪吃蛇 | C++ | 可以正常游玩 |
 | 贪吃蛇(Python tkinter) | Python | 可以正常游玩 |
 | 数独(Soduku) | Python | 可以正常游玩 |
-| 五子棋(Gomoku) | Rust(web) | 不造了! |
 | 贪吃蛇-rs | Rust | 可以正常游玩 |
 | Dino | Rust | 开坑中 |
 | 扫雷 | Rust | 可以正常游玩 |
+| 扫雷 | C++ | 可以正常游玩 |
 
 本仓库作为学习编程的记录。
 
