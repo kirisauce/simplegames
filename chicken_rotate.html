@@ -1,7 +1,7 @@
 <html>
     <head>
         <title></title>
-        <script src='https://unpkg.com/vconsole@latest/dist/vconsole.min.js'></script>
+        <meta charset="utf-8" />
         <style>
 @keyframes r2d {
     from { transform: rotate(0deg); }
@@ -27,7 +27,6 @@ img.img3d {
         <img src='chicken.png' id='chicken' x='100' y='100' z='100' angle='360deg' />
         <p id='timer'></p>
         <script>
-var vConsole = new VConsole();
 var chicken_status = '';
 var timer = 0;
 function switch_2d3d() {
@@ -41,11 +40,6 @@ function switch_2d3d() {
 }
 window.addEventListener('load', ()=> {
     var chicken = document.querySelector('#chicken');
-    chicken.addEventListener('animationend', (event)=> {
-        if( chicken_status == '3d' ) {
-            let e = document.documentElement;
-        }
-    });
     switch_2d3d();
 
     setInterval(()=> {
