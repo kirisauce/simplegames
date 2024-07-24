@@ -1,3 +1,5 @@
+// compile with: c++ minesweeper.cc -o minesweeper-cc -lncursesw -std=c++20
+
 #define NCURSES_WIDECHAR 1
 
 #include <curses.h>
