@@ -17,7 +17,7 @@ fn main() {
         if let Some(location) = panic_info.location() {
             println!("The program is panicking.");
             println!("at {}:{}", location.file(), location.line());
-            println!("{:?}", panic_info.message());
+            println!("{}", panic_info);
         } else {
             println!("The program is panicking but there is no info about where it occurred");
         }
